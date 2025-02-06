@@ -1,0 +1,451 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "OrgMapster API",
+    "description": "OrgMapster API is a public API developed for the OrgMapster application, providing a centralized database for organization management. It enables users to search and add organization data remotely using secure JSON-based API requests. \n\nBuilt with **Laravel 11**, **PHP 8.3**, and **MySQL**, the API is deployed with **Nginx and SSL**, ensuring secure and efficient communication between the OrgMapster app and the centralized server.\n\n### Authentication\n- An **API Key** is required to access the API.\n- The API Key **must** be included in the request header as `X-API-KEY`.\n- Please contact the developer team for API Key access.\n\n### Rate Limits\n- The `/append` endpoint has a rate limit of **120 requests per minute per user** to prevent server overload.\n- Rate limit value may change in the future based on real-life API traffic and/or requirements.\n\n### OrgMapster API is developed and maintained by:\n- **[Darlo Garrido (dgarrido@innodata.com)](mailto:dgarrido@innodata.com)**\n- **[Tom Jherald Labini (tlabini@innodata.com)](mailto:tlabini@innodata.com)**\n- **[Marvin Grapa (mgrapa@innodata.com)](mailto:mgrapa@innodata.com)**\n",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://edu-techhub.innodata.com/api/orgmapster/v1",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "users",
+      "description": "Endpoints available to regular users"
+    }
+  ],
+  "paths": {
+    "/search": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Search for a matching Organization and Country entry",
+        "description": "This endpoint allows users to search for a database entry using an organization's name and its corresponding **ISO 3166 Alpha-3 country code**. The search is case-insensitive and supports partial matches.\n\n### Authentication:\n- A valid API key is required and must be included in the request header as `X-API-KEY`.\n\n### Rate Limiting:\n- This endpoint is not subject to rate limiting.\n",
+        "operationId": "processOrganization",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization",
+            "in": "query",
+            "description": "The name of the organization to search for.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "BICOL UNIVERSITY"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "The **ISO 3166 Alpha-3** country code of the organization’s location.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "PHL"
+            }
+          },
+          {
+            "name": "remarks",
+            "in": "query",
+            "description": "Optional remarks associated with the organization-country entry.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "OK"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results matching the specified criteria.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "example": "success"
+                          },
+                          "matchedOrganization": {
+                            "type": "object",
+                            "properties": {
+                              "organization": {
+                                "type": "string",
+                                "example": "BICOL UNIVERSITY"
+                              },
+                              "country": {
+                                "type": "string",
+                                "example": "PHL"
+                              },
+                              "remarks": {
+                                "type": "string",
+                                "example": "OK"
+                              }
+                            }
+                          },
+                          "orgMatchType": {
+                            "type": "string",
+                            "example": "exact"
+                          },
+                          "countryMatchType": {
+                            "type": "string",
+                            "example": "exact"
+                          },
+                          "isExactMatch": {
+                            "type": "boolean",
+                            "example": true
+                          }
+                        }
+                      }
+                    },
+                    "required": [
+                      "data"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters."
+          },
+          "401": {
+            "description": "Unauthorized. The provided API key is invalid or missing."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    },
+    "/append": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Insert a new Organization-Country entry",
+        "description": "This endpoint allows users to add new organization entries to the database. It accepts an array of organization items that conform to the `OrganizationCountryItem` schema.\n\n### Authentication:\n- A valid API key is required and must be included in the request header as `X-API-KEY`.\n\n### Rate Limiting:\n- This endpoint is rate-limited to **120 requests per minute per user**. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n### Security Note:\n- While the API key can be passed as a query parameter, it is **not recommended** due to potential security risks. Always use the `X-API-KEY` header.\n",
+        "operationId": "appendOrganizations",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "description": "An array of organization items to add to the database.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "country",
+                  "id",
+                  "organization"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "format": "int64",
+                    "example": 18863
+                  },
+                  "organization": {
+                    "type": "string",
+                    "example": "UNIVERSITY OF SANTO TOMAS"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "ISO-3166 Alpha-3 Country code",
+                    "example": "PHL"
+                  },
+                  "remarks": {
+                    "type": "string",
+                    "example": "OK"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-10-17T00:18:00.603Z"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2024-10-17T00:18:00.603Z"
+                  }
+                }
+              },
+              "example": {
+                "organizations": [
+                  {
+                    "organization": "Harvard University",
+                    "country": "USA",
+                    "remarks": "OK"
+                  },
+                  {
+                    "organization": "University of Santo Tomas",
+                    "country": "PHL",
+                    "remarks": "OK"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "New item(s) successfully created in the database.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "properties": {
+                          "status": {
+                            "type": "string",
+                            "example": "success"
+                          },
+                          "message": {
+                            "type": "string",
+                            "example": "Organizations and Countries appended successfully."
+                          },
+                          "existingRecords": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer",
+                                  "example": 4178898
+                                },
+                                "organization": {
+                                  "type": "string",
+                                  "example": "Harvard University"
+                                },
+                                "country": {
+                                  "type": "string",
+                                  "example": "USA"
+                                },
+                                "remarks": {
+                                  "type": "string",
+                                  "example": "OK"
+                                },
+                                "created_at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "example": "2025-02-06T07:16:54.000000Z"
+                                },
+                                "updated_at": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "example": "2025-02-06T07:16:54.000000Z"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "required": [
+                          "status",
+                          "message"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "data",
+                      ""
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input. The request body does not conform to the required schema."
+          },
+          "401": {
+            "description": "Unauthorized. The provided API key is invalid or missing."
+          },
+          "429": {
+            "description": "Too many requests. The rate limit of 120 requests per minute has been exceeded."
+          },
+          "500": {
+            "description": "Internal server error."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-KEY",
+        "description": "A valid API key is required to access the OrgMapster API. The key must be included in the request header as `X-API-KEY`. Passing the API key as a query parameter is **not recommended** for security reasons.\n"
+      }
+    },
+    "schemas": {
+      "OrganizationCountryItem": {
+        "type": "object",
+        "required": [
+          "country",
+          "id",
+          "organization"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "example": 18863
+          },
+          "organization": {
+            "type": "string",
+            "example": "UNIVERSITY OF SANTO TOMAS"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO-3166 Alpha-3 Country code",
+            "example": "PHL"
+          },
+          "remarks": {
+            "type": "string",
+            "example": "OK"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-10-17T00:18:00.603Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-10-17T00:18:00.603Z"
+          }
+        }
+      },
+      "GetResponseItem": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "example": "success"
+              },
+              "matchedOrganization": {
+                "type": "object",
+                "properties": {
+                  "organization": {
+                    "type": "string",
+                    "example": "BICOL UNIVERSITY"
+                  },
+                  "country": {
+                    "type": "string",
+                    "example": "PHL"
+                  },
+                  "remarks": {
+                    "type": "string",
+                    "example": "OK"
+                  }
+                }
+              },
+              "orgMatchType": {
+                "type": "string",
+                "example": "exact"
+              },
+              "countryMatchType": {
+                "type": "string",
+                "example": "exact"
+              },
+              "isExactMatch": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PostResponseItem": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "example": "success"
+              },
+              "message": {
+                "type": "string",
+                "example": "Organizations and Countries appended successfully."
+              },
+              "existingRecords": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer",
+                      "example": 4178898
+                    },
+                    "organization": {
+                      "type": "string",
+                      "example": "Harvard University"
+                    },
+                    "country": {
+                      "type": "string",
+                      "example": "USA"
+                    },
+                    "remarks": {
+                      "type": "string",
+                      "example": "OK"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-02-06T07:16:54.000000Z"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "example": "2025-02-06T07:16:54.000000Z"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "status",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          ""
+        ]
+      }
+    }
+  }
+}
